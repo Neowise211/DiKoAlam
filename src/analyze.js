@@ -24,9 +24,16 @@ const REASON_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-pro";
 
 // ---------------------------------------------------------------------------
 // One thin wrapper around the OpenAI-compatible endpoint. Both steps use it.
+//
+// v4-pro and v4-flash-vision-exp are reasoning models: max_tokens is spent on
+// message.reasoning_content FIRST, and only the leftover budget writes
+// message.content. Too low a budget yields finish_reason "length" with an
+// empty content — that used to surface as a generic "empty response" error.
+// Give each step enough headroom and call out the specific failure so it's
+// not confused with a real outage.
 // ---------------------------------------------------------------------------
 
-async function chat({ model, content, json = false }) {
+async function chat({ model, content, json = false, maxTokens = 1500 }) {
   const res = await fetch(`${BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
@@ -37,7 +44,7 @@ async function chat({ model, content, json = false }) {
       model,
       messages: [{ role: "user", content }],
       ...(json ? { response_format: { type: "json_object" } } : {}),
-      max_tokens: 1500,
+      max_tokens: maxTokens,
       stream: false,
     }),
   });
@@ -46,8 +53,14 @@ async function chat({ model, content, json = false }) {
   if (!res.ok) {
     throw new Error(data?.error?.message || `DeepSeek returned HTTP ${res.status}`);
   }
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("DeepSeek returned an empty response.");
+  const choice = data?.choices?.[0];
+  const text = choice?.message?.content;
+  if (!text) {
+    if (choice?.finish_reason === "length") {
+      throw new Error("DeepSeek ran out of tokens thinking and never answered — try again.");
+    }
+    throw new Error("DeepSeek returned an empty response.");
+  }
   return text;
 }
 
@@ -78,6 +91,7 @@ export async function extract(base64, mimeType) {
       { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
       { type: "text", text: EXTRACT_PROMPT },
     ],
+    maxTokens: 1200,
   });
 }
 
@@ -92,6 +106,19 @@ messages actually mean.
 Read tone, punctuation, message length, reply gaps and silence — not just the
 literal words. "Ok." and "Ok!" are different messages. A one-word reply after a
 long one is a signal. "Wala, okay lang" is almost never okay lang.
+
+How to tell the close ones apart:
+- galit vs tampo: galit is direct — accusations, caps, exclamation points,
+  confrontation. tampo is withdrawal — short cold replies, going quiet,
+  refusing to explain why, "bahala ka".
+- lungkot vs pagod: lungkot responds to something that happened between you
+  two. pagod is about everything else draining her — work, family, sleep —
+  and she says so, or the flatness reads generic rather than aimed at you.
+- selos shows up as questions about who she was with, mentions of another
+  person unprompted, or comparing herself to someone.
+- okay lang is a real state, not just the literal words "okay lang" — score it
+  high only when the messages actually read unbothered (fast replies, normal
+  length, no hedging), never just because she typed the phrase.
 
 Reply with JSON only, exactly this shape:
 {
@@ -110,6 +137,7 @@ export async function analyze(transcript) {
     model: REASON_MODEL,
     content: ANALYZE_PROMPT(transcript),
     json: true,
+    maxTokens: 3000,
   });
   return normalize(text);
 }

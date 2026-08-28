@@ -26,15 +26,30 @@ Node 22, zero dependencies, ES modules.
 - `response_format` supports **`"text"` and `"json_object"` only** — there is no
   `json_schema`. The shape is requested in the prompt and enforced by
   `normalize()`.
+- **Both models are reasoning models.** `message.reasoning_content` is filled
+  before `message.content`, out of the same `max_tokens` budget. Too low a
+  budget yields `finish_reason: "length"` with `content` empty — that is a
+  starved budget, not a broken API. Give each step real headroom (extract
+  ~1200, analyze ~3000) and read `content` only, never `reasoning_content`.
 
 Do not "simplify" by sending the image to `deepseek-v4-pro`. It does not work.
 
-## Pipeline
+## Pipeline — the handoff rule
 
 ```
 screenshot → deepseek-v4-flash-vision-exp → transcript → deepseek-v4-pro → JSON
              (extract, verbatim Taglish)                 (score + verdict)
 ```
+
+The seam between the two calls is **plain text, nothing else**:
+
+- The vision step transcribes only. It does not interpret, score, or summarize
+  — it's flash-tier, judgment isn't its job, and mixing concerns there makes
+  failures harder to isolate.
+- The reasoning step owns all scoring and the verdict, and receives the
+  transcript as its only input — it never sees the image.
+- Because the seam is plain text, either half can be stubbed independently
+  when the other is broken or slow (see `HANDOFF.md` escape hatch 1).
 
 Model IDs come from env vars with those defaults. Never hardcode a model ID at a
 call site.
@@ -62,9 +77,10 @@ Throw `Error` with a message a stressed person at a demo can read:
 
 ## Testing
 
-`npm test` — `node:assert/strict`, no framework, no runner, no fixtures.
-Test `normalize()` and `toBars()`. Do not write tests for the HTTP layer or mock
-`fetch` against DeepSeek; that is not worth the hour.
+`npm test` runs `test/deepseek.test.js` — `node:assert/strict`, no framework,
+no runner, no fixtures. Test `normalize()` and `toBars()`. Do not write tests
+for the HTTP layer or mock `fetch` against DeepSeek; that is not worth the
+hour.
 
 ## Deploy
 
