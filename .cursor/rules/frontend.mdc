@@ -1,0 +1,55 @@
+---
+alwaysApply: false
+globs: public/**
+description: Frontend conventions — vanilla ES modules, product-page structure, no framework, no build step.
+---
+
+# Frontend (`public/`) — Person A
+
+Plain ES modules loaded straight from `index.html`. No React, no bundler, no
+transpile. If a change needs a build step, it is the wrong change.
+
+## This is a product page, not a utility
+
+It must look finished before anyone interacts with it:
+
+- **Lands populated.** `app.js` renders `SAMPLE` on first paint, with the
+  `Halimbawa` pill and a "sample reading" note so it is honest about being a
+  sample. Never ship an empty-state-only first paint.
+- **Card sections with uppercase labels**, in this order: hero → upload →
+  `Ang nararamdaman niya` (bars) → verdict (`Ibig sabihin` / `Gawin mo`) →
+  recent reads → footer. Keep the order; it is the demo script.
+- Section headings are Taglish. Body copy can be English.
+
+## Conventions
+
+- `index.html` is markup only. Styles in `styles.css`, behaviour in `app.js`.
+- `app.js` imports `EMOTIONS` and `toBars` from `./shared.js`. Never hardcode an
+  emotion label, hint, or colour — read it from `EMOTIONS`.
+- Talk to the backend only through `POST /api/analyze`. `app.js` must not know
+  DeepSeek exists and must never hold an API key.
+- Build DOM with `createElement` + `textContent` for anything from the model.
+  `innerHTML` is fine for static scaffolding you typed yourself, never for
+  `ibig_sabihin`, `gawin_mo`, or an emotion name.
+- Every new file here goes in the `PUBLIC` allowlist in `dev.js`.
+- History is `localStorage`, last 5, and is a nicety — wrap it in try/catch and
+  never let a private-mode failure break the page.
+
+## The three states
+
+Upload renders exactly three, in order — keep them distinct:
+
+1. **empty** — the drop zone (sample reading already showing below it)
+2. **loading** — rotating Taglish status line, cleared with `clearInterval`
+3. **result** — bars, then the two verdict cards
+
+An error replaces the status line with `.err`; it never leaves a spinner
+running. Any new `await` needs its `clearInterval` on the failure path too.
+
+## Styling
+
+CSS custom properties on `:root` — use `var(--accent)`, don't paste hex codes.
+Bar colours are the one exception: they come from `EMOTIONS[key].color` in JS
+because they are data, not theme.
+
+Mobile-first, single column, `max-width: 480px`. This gets demoed on a phone.

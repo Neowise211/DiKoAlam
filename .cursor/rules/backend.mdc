@@ -1,0 +1,73 @@
+---
+alwaysApply: false
+globs: src/**,api/**,test/**,dev.js
+description: Backend conventions — DeepSeek v4 API shape, model constraints, and what normalize() must guarantee.
+---
+
+# Backend — Person B
+
+Node 22, zero dependencies, ES modules.
+
+- `src/analyze.js` — **the file you edit.** The only file that knows DeepSeek
+  exists.
+- `api/analyze.js` — the request handler. Vercel deploys it as a function;
+  `dev.js` mounts the same export for localhost. One handler, two hosts — never
+  fork it.
+- `dev.js` — localhost only, not deployed. Should not need edits.
+
+## DeepSeek v4 — verified against the live docs, not from memory
+
+- `POST https://api.deepseek.com/chat/completions`, `Authorization: Bearer <key>`.
+  OpenAI-compatible shape.
+- **Only `deepseek-v4-flash-vision-exp` accepts images.** `deepseek-v4-pro` and
+  `deepseek-v4-flash` are text-only and will fail on image content. This is the
+  entire reason the pipeline is two calls.
+- Images are an `image_url` content part holding a base64 data URL.
+- `response_format` supports **`"text"` and `"json_object"` only** — there is no
+  `json_schema`. The shape is requested in the prompt and enforced by
+  `normalize()`.
+
+Do not "simplify" by sending the image to `deepseek-v4-pro`. It does not work.
+
+## Pipeline
+
+```
+screenshot → deepseek-v4-flash-vision-exp → transcript → deepseek-v4-pro → JSON
+             (extract, verbatim Taglish)                 (score + verdict)
+```
+
+Model IDs come from env vars with those defaults. Never hardcode a model ID at a
+call site.
+
+## normalize() is load-bearing
+
+`json_object` guarantees *valid JSON*, not the *right shape*. The realistic
+failure is a well-formed object that is subtly wrong. `normalize()` must keep
+guaranteeing:
+
+- all 7 keys from `public/shared.js`, in that order, zero-filled when absent
+- unknown emotion names dropped, never guessed at
+- case and whitespace drift in emotion names tolerated
+- negatives clamped, non-numbers treated as 0
+- a throw — not a silent pass — on invalid JSON, a blank verdict, or an
+  all-zero score
+
+Change `normalize()` and you change `test/analyze.test.js` in the same edit.
+
+## Errors
+
+Throw `Error` with a message a stressed person at a demo can read:
+"Couldn't read any messages in that screenshot." Not "TypeError: undefined".
+`api/analyze.js` puts `err.message` straight in front of the user.
+
+## Testing
+
+`npm test` — `node:assert/strict`, no framework, no runner, no fixtures.
+Test `normalize()` and `toBars()`. Do not write tests for the HTTP layer or mock
+`fetch` against DeepSeek; that is not worth the hour.
+
+## Deploy
+
+Vercel, zero-config: `public/` is served statically at `/`, `api/*.js` become
+functions. `DEEPSEEK_API_KEY` goes in Vercel project env vars — never in the
+repo. Adding a build step or a framework breaks this; don't.

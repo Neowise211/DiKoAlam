@@ -1,0 +1,12 @@
+{
+  "name": "di-ko-alam",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env dev.js",
+    "start": "node --env-file-if-exists=.env dev.js",
+    "test": "node test/deepseek.test.js"
+  }
+}

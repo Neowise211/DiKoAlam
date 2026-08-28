@@ -1,0 +1,76 @@
+---
+alwaysApply: true
+description: Di Ko Alam architecture, file ownership, and the frontend/backend contract.
+---
+
+# Di Ko Alam
+
+Upload a chat screenshot → probability bars for what she's actually feeling,
+plus what she means (`ibig_sabihin`) and what to say back (`gawin_mo`).
+
+Built by two people in a one-hour hackathon. It is a **product feature page**,
+not a utility: it lands already populated with a sample reading, in card
+sections, and it deploys to Vercel. Optimize for a demo that looks finished.
+
+## Layout
+
+```
+public/    static frontend, served at /        — PERSON A
+api/       Vercel serverless functions          — thin
+src/       DeepSeek logic                       — PERSON B
+test/      node:assert, no framework
+dev.js     local server; NOT deployed
+.cursor/   rules + skills
+```
+
+## Ownership — do not edit across the line
+
+| Path | Owner |
+|---|---|
+| `public/index.html`, `public/styles.css`, `public/app.js` | **A** (frontend) |
+| `src/analyze.js` | **B** (backend) |
+| `public/shared.js` | **both** — agree before editing, imported by browser *and* server |
+| `api/analyze.js`, `dev.js` | done, nobody |
+
+When asked to change something, stay inside the owning file. If a change needs
+both sides, say so instead of editing both.
+
+## The contract
+
+The only thing connecting the two halves. Do not add a second endpoint.
+
+```
+POST /api/analyze
+  → { "image": "<base64, no data: prefix>", "mimeType": "image/png" }
+
+200 ← { "emotions": [ { "emotion": "tampo", "probability": 0.44 }, ... ],
+        "ibig_sabihin": "...",
+        "gawin_mo": "..." }
+
+4xx/5xx ← { "error": "shown to the user verbatim" }
+```
+
+- `emotions` always contains all 7 keys from `public/shared.js`, zero-filled.
+- The backend does **not** sort. `toBars()` sorts and converts to percent in the
+  browser.
+- Error strings are user-facing. No stack traces, no `[object Object]`.
+
+## Hard rules
+
+- **Zero runtime dependencies.** A fresh clone runs with `npm run dev` and no
+  `npm install`. Do not add Express, dotenv, node-fetch, React, or a bundler —
+  Node 22 has `fetch`, `--env-file-if-exists`, and `node:http`.
+- **One handler, two hosts.** `api/analyze.js` is the only request handler.
+  Vercel runs it as a function; `dev.js` wraps that same export for localhost.
+  Never fork the logic into a second copy.
+- **No API key in `public/`.** The key is server-side only, from
+  `process.env.DEEPSEEK_API_KEY`. If you are writing a key into anything under
+  `public/`, stop.
+- **No key, no problem.** `api/analyze.js` returns mock data when
+  `DEEPSEEK_API_KEY` is unset, so the frontend is never blocked and a fresh
+  clone demos out of the box. Keep that path working.
+- **New file in `public/`** must be added to the `PUBLIC` allowlist in `dev.js`
+  or it 404s locally. (Vercel serves `public/` wholesale — the allowlist is a
+  localhost-only guard because `.env` sits one directory up.)
+- Emotion labels stay Filipino. `tampo` has no English equivalent and is the
+  reason the app exists.
