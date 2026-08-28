@@ -19,13 +19,14 @@ const MAX_BODY = 12 * 1024 * 1024; // screenshots base64-inflate ~33%
 
 // Allowlist, not a denylist. This ends up on hackathon wifi next to a .env.
 // Add a filename here when you add a file to public/.
-const PUBLIC = new Set(["index.html", "app.js", "shared.js", "styles.css"]);
+const PUBLIC = new Set(["index.html", "app.js", "shared.js", "styles.css", "logo.png"]);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
 };
 
 function readBody(req) {

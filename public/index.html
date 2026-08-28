@@ -5,15 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Di Ko Alam — alam na namin</title>
 <meta name="description" content="Upload the chat. We'll tell you what she actually means.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🥔</text></svg>">
+<link rel="icon" href="./logo.png" type="image/png">
 </head>
 <body>
 
 <header class="topbar">
   <div class="wrap">
-    <span class="wordmark">Di Ko Alam</span>
-    <span class="potato" title="poteto mode">🥔</span>
+    <a class="brand" href="./">
+      <img class="logo" src="./logo.png" width="36" height="36" alt="">
+      <span class="wordmark">Di Ko <span class="hl">Alam</span></span>
+    </a>
   </div>
 </header>
 
@@ -21,8 +26,24 @@
 
   <!-- hero ------------------------------------------------------------- -->
   <section class="hero">
-    <p class="eyebrow">Chat decoder</p>
-    <h1>Sabi niya okay lang.<br><span class="strike">Okay lang.</span></h1>
+    <div class="nubs" aria-hidden="true">
+      <span class="nub nub-heart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
+        </svg>
+      </span>
+      <span class="nub nub-chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 16.5V7.8A2.8 2.8 0 0 1 7.8 5h8.4A2.8 2.8 0 0 1 19 7.8v5.4A2.8 2.8 0 0 1 16.2 16H9l-4 3.5z"/>
+        </svg>
+      </span>
+      <span class="nub nub-spark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v3M12 18v3M3 12h3M18 12h3M6.2 6.2l2.1 2.1M15.7 15.7l2.1 2.1M17.8 6.2l-2.1 2.1M8.3 15.7l-2.1 2.1"/>
+        </svg>
+      </span>
+    </div>
+    <h1>Sabi niya okay lang.</h1>
     <p class="lede">
       Upload the screenshot. We read the last 5 exchanges and tell you what
       she actually means — and what to say next.
@@ -38,7 +59,12 @@
 
     <div class="drop" id="drop" role="button" tabindex="0"
          aria-label="Upload a chat screenshot">
-      <span class="drop-icon" aria-hidden="true">📸</span>
+      <span class="drop-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 16V7M8.5 10.5 12 7l3.5 3.5"/>
+          <path d="M5 16.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1.5"/>
+        </svg>
+      </span>
       <strong>Upload chat screenshot</strong>
       <span class="muted">Tap to pick, or drag one here</span>
     </div>
